@@ -19,7 +19,6 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
-  // Normalize URL
   let parsedUrl = req.url.split('?')[0];
   if (parsedUrl === '/' || parsedUrl === '') {
     parsedUrl = '/index.html';
@@ -27,7 +26,6 @@ const server = http.createServer((req, res) => {
 
   const filePath = path.join(__dirname, parsedUrl);
 
-  // Security check: ensure path stays inside __dirname
   if (!filePath.startsWith(__dirname)) {
     res.writeHead(403, { 'Content-Type': 'text/plain' });
     res.end('403 Forbidden');
@@ -36,7 +34,6 @@ const server = http.createServer((req, res) => {
 
   fs.stat(filePath, (err, stats) => {
     if (err || !stats.isFile()) {
-      // SPA Fallback to index.html
       const indexPath = path.join(__dirname, 'index.html');
       fs.readFile(indexPath, (readErr, content) => {
         if (readErr) {
