@@ -81,10 +81,9 @@ server.on('error', (err) => {
 server.listen(PORT, () => {
   console.log(`
 ========================================================================
-🛡️  STRATIQ SECURE ADMIN PORTAL (ISOLATED STANDALONE SERVER)
+🛡️  STRATIQ SECURE ADMIN PORTAL (LOCAL DEV SERVER)
 📡  Admin URL: http://localhost:${PORT}
 🔒  Security Level: Restricted Passkey Access
-🔗  Connected to Backend: http://localhost:5000/api/admin
 ========================================================================
 `);
 });
