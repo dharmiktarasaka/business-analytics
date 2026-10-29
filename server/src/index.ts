@@ -22,7 +22,7 @@ const allowedOriginsList = (process.env.CORS_ORIGIN || config.corsOrigin || '')
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(
   cors({
-    origin: (origin, callback) => {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       // 1. Allow mobile apps, curl, server-to-server, or same-origin requests
       if (!origin) {
         return callback(null, true);

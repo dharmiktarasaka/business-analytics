@@ -61,7 +61,7 @@ Before deploying to Render, verify that your MongoDB Atlas cluster allows inboun
    - **Branch**: `main` (or your active branch)
    - **Root Directory**: `server` ⚠️ *(Crucial: set this so Render builds inside the server folder)*
    - **Runtime**: `Node`
-   - **Build Command**: `npm install && npm run build`
+   - **Build Command**: `npm install --include=dev && npm run build`
    - **Start Command**: `npm run start`
    - **Instance Type**: `Free` (or higher tier)
 
