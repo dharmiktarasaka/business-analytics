@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STRATIQ Secure Admin Portal - User Registration Registry</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Runtime Config for Vercel/Render Deployment -->
+  <script src="./config.js"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="bg-[#090D16] text-slate-100 min-h-screen flex flex-col font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
+
+  <!-- ========================================== -->
+  <!-- 1. SECURITY LOCK SCREEN (AUTH GATE)        -->
+  <!-- ========================================== -->
+  <div id="authGate" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#090D16]/95 backdrop-blur-xl">
+    <div class="w-full max-w-md bg-slate-900/90 border border-slate-700/80 rounded-3xl p-8 shadow-2xl relative overflow-hidden backdrop-blur-md">
+      <!-- Glow ambient backdrop -->
+      <div class="absolute -top-20 -left-20 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-20 -right-20 w-60 h-60 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="text-center space-y-3 relative z-10">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-xl shadow-cyan-500/20 mx-auto text-white">
+          <i data-lucide="shield-check" class="w-8 h-8"></i>
+        </div>
+        <h1 class="text-2xl font-extrabold text-white tracking-tight">RESTRICTED ADMIN PORTAL</h1>
+        <p class="text-xs text-slate-400">
+          Standalone user intake registry, encrypted credential management & enterprise audits.
+        </p>
+      </div>
+
+      <form id="authForm" class="mt-8 space-y-4 relative z-10">
+        <div id="authError" class="hidden p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-400 text-xs flex items-center gap-2">
+          <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+          <span id="authErrorMsg">Invalid Admin Key.</span>
+        </div>
+
+        <div>
+          <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+            Admin Master Passkey
+          </label>
+          <div class="relative">
+            <i data-lucide="lock" class="w-4 h-4 text-slate-500 absolute left-3.5 top-3 pointer-events-none"></i>
+            <input
+              type="password"
+              id="adminKeyInput"
+              required
+              placeholder="Enter master admin key..."
+              class="w-full pl-10 pr-10 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
+            />
+            <button
+              type="button"
+              id="toggleKeyVis"
+              class="absolute right-3 top-2.5 text-slate-400 hover:text-white p-0.5"
+            >
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Backend Server URL
+            </label>
+            <button type="button" id="resetBackendBtn" class="text-[10px] text-cyan-400 hover:underline">
+              Reset Default
+            </button>
+          </div>
+          <div class="relative">
+            <i data-lucide="server" class="w-4 h-4 text-slate-500 absolute left-3.5 top-3 pointer-events-none"></i>
+            <input
+              type="text"
+              id="backendUrlInput"
+              placeholder="http://localhost:5000 or https://your-server.onrender.com"
+              class="w-full pl-10 pr-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-cyan-500 transition-colors"
+            />
+          </div>
+          <p class="text-[10px] text-slate-500 mt-1">Render URL on Vercel deployment, or localhost for local dev.</p>
+        </div>
+
+        <button
+          type="submit"
+          id="unlockBtn"
+          class="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-semibold shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center gap-2 active:scale-98"
+        >
+          <i data-lucide="key" class="w-4 h-4"></i>
+          <span>Authenticate & Unlock Portal</span>
+        </button>
+
+        <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
+          <span>Security Token: <code class="text-slate-400 font-mono">x-admin-key</code></span>
+          <button
+            type="button"
+            id="fillDefaultKeyBtn"
+            class="text-cyan-400 hover:underline font-medium text-[11px]"
+          >
+            Use Default Key
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 2. MAIN ADMIN PORTAL (AUTHENTICATED)       -->
+  <!-- ========================================== -->
+  <div id="adminApp" class="hidden flex-1 flex flex-col min-h-screen">
+    
+    <!-- Top Navbar -->
+    <header class="h-16 border-b border-slate-800 bg-[#0B0F19]/90 backdrop-blur-md sticky top-0 z-40 px-4 sm:px-8 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-md shadow-cyan-500/20">
+          <i data-lucide="shield" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-extrabold text-white tracking-tight">STRATIQ ADMIN</span>
+            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+              Isolated Standalone
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400">Enterprise User Registration & Credential Audit Portal</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Live Connection Status & Backend Config Button -->
+        <button
+          id="backendStatusBtn"
+          class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-[11px] text-slate-300 font-mono transition-colors"
+          title="Click to check or update Backend API Server URL"
+        >
+          <span id="backendStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="backendStatusText">Connecting...</span>
+          <i data-lucide="settings" class="w-3.5 h-3.5 text-slate-400"></i>
+        </button>
+
+        <!-- Lock / Sign Out -->
+        <button
+          id="logoutBtn"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-800 hover:bg-slate-800/80 text-slate-300 hover:text-white text-xs font-semibold transition-colors"
+          title="Lock portal & clear admin session"
+        >
+          <i data-lucide="lock" class="w-3.5 h-3.5 text-cyan-400"></i>
+          <span>Lock Portal</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-8 space-y-6">
+
+      <!-- Top Overview Banner -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-3xl bg-slate-900/60 border border-slate-800 backdrop-blur-md">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <h2 class="text-xl font-extrabold text-white">Registered Users Directory</h2>
+            <span class="text-[11px] font-bold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              Live Intake Data
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 max-w-xl">
+            Displays all registration intake details captured when users create accounts: Name, Email, Mobile Phone, Yearly Revenue, and Enterprise details. Passwords are strictly protected & encrypted.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2.5 flex-wrap">
+          <button
+            id="refreshBtn"
+            class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-slate-600 text-xs font-medium text-slate-200 transition-colors"
+          >
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-cyan-400"></i>
+            <span>Refresh</span>
+          </button>
+
+          <button
+            id="exportCsvBtn"
+            class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-white shadow-sm transition-all"
+          >
+            <i data-lucide="download" class="w-3.5 h-3.5 text-blue-400"></i>
+            <span>Export CSV</span>
+          </button>
+
+          <button
+            id="openAddUserBtn"
+            class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-semibold shadow-md shadow-cyan-500/20 transition-all active:scale-95"
+          >
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
+            <span>Register User</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Metrics Cards -->
+      <div id="statsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- 1. Total Registered Users -->
+        <div class="glass-card rounded-2xl p-5 relative overflow-hidden">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Registered Users</p>
+              <h3 id="statTotalUsers" class="text-3xl font-extrabold text-white mt-1">-</h3>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+              <i data-lucide="users" class="w-6 h-6"></i>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-3 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Active account records in system
+          </p>
+        </div>
+
+        <!-- 2. Enterprises Registered -->
+        <div class="glass-card rounded-2xl p-5 relative overflow-hidden">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Enterprise Businesses</p>
+              <h3 id="statTotalBusinesses" class="text-3xl font-extrabold text-white mt-1">-</h3>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+              <i data-lucide="building-2" class="w-6 h-6"></i>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-3 flex items-center gap-1.5">
+            <span class="text-indigo-400 font-semibold" id="statTotalAnalyses">-</span> Strategic analyses run
+          </p>
+        </div>
+
+        <!-- 3. High Revenue Tier -->
+        <div class="glass-card rounded-2xl p-5 relative overflow-hidden">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">$1M+ Revenue Segment</p>
+              <h3 id="statHighRevenue" class="text-3xl font-extrabold text-emerald-400 mt-1">-</h3>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <i data-lucide="dollar-sign" class="w-6 h-6"></i>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-3">High-growth & mid-market tier</p>
+        </div>
+
+        <!-- 4. Password Security Status -->
+        <div class="glass-card rounded-2xl p-5 relative overflow-hidden">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Password Security</p>
+              <h3 class="text-2xl font-extrabold text-cyan-400 mt-1 flex items-center gap-1.5">
+                <span>100%</span>
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
+                  AES-256
+                </span>
+              </h3>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+              <i data-lucide="shield-check" class="w-6 h-6"></i>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-3">Zero-Cleartext encrypted audit</p>
+        </div>
+      </div>
+
+      <!-- Filters & Search Toolbar -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <!-- Search -->
+          <div class="relative flex-1">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none"></i>
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Search by Name, Email, Mobile Phone, Enterprise Name, or UID..."
+              class="w-full pl-10 pr-16 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
+            />
+            <button
+              id="clearSearchBtn"
+              class="hidden absolute right-3 top-2.5 text-xs text-slate-400 hover:text-white"
+            >
+              Clear
+            </button>
+          </div>
+
+          <!-- Revenue Filter & Sorter -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <!-- Revenue Filter -->
+            <div class="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs">
+              <i data-lucide="filter" class="w-3.5 h-3.5 text-slate-400"></i>
+              <span class="text-[11px] text-slate-400 uppercase font-semibold">Revenue:</span>
+              <select id="revenueFilter" class="bg-transparent text-white text-xs font-medium focus:outline-none cursor-pointer">
+                <option value="all" class="bg-slate-900 text-white">All Revenues</option>
+                <option value="Under $100,000" class="bg-slate-900 text-white">Under $100,000</option>
+                <option value="$100,000 - $500,000" class="bg-slate-900 text-white">$100,000 - $500,000</option>
+                <option value="$500,000 - $1,000,000" class="bg-slate-900 text-white">$500,000 - $1,000,000</option>
+                <option value="$1,000,000 - $5,000,000" class="bg-slate-900 text-white">$1,000,000 - $5,000,000</option>
+                <option value="$5,000,000+" class="bg-slate-900 text-white">$5,000,000+</option>
+              </select>
+            </div>
+
+            <!-- Sort -->
+            <div class="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs">
+              <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-slate-400"></i>
+              <span class="text-[11px] text-slate-400 uppercase font-semibold">Sort:</span>
+              <select id="sortFilter" class="bg-transparent text-white text-xs font-medium focus:outline-none cursor-pointer">
+                <option value="createdAt_desc" class="bg-slate-900 text-white">Newest First</option>
+                <option value="createdAt_asc" class="bg-slate-900 text-white">Oldest First</option>
+                <option value="displayName_asc" class="bg-slate-900 text-white">Name (A-Z)</option>
+                <option value="yearlyRevenue_desc" class="bg-slate-900 text-white">Yearly Revenue</option>
+                <option value="businessName_asc" class="bg-slate-900 text-white">Enterprise Name</option>
+              </select>
+            </div>
+
+            <!-- View Switcher -->
+            <div class="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-0.5">
+              <button
+                id="viewTableBtn"
+                class="p-1.5 rounded-lg bg-cyan-600 text-white transition-colors"
+                title="Table View"
+              >
+                <i data-lucide="list" class="w-3.5 h-3.5"></i>
+              </button>
+              <button
+                id="viewCardsBtn"
+                class="p-1.5 rounded-lg text-slate-400 hover:text-white transition-colors"
+                title="Card Grid View"
+              >
+                <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+          <span>Showing <strong id="visibleCount" class="text-white">0</strong> of <strong id="totalCount" class="text-white">0</strong> users</span>
+          <span class="flex items-center gap-1 text-cyan-400">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Zero-Cleartext Protection Active
+          </span>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loadingIndicator" class="glass-panel rounded-2xl p-16 flex flex-col items-center justify-center gap-3">
+        <div class="w-8 h-8 rounded-full border-2 border-cyan-500 border-t-transparent animate-spin"></div>
+        <p class="text-xs text-slate-400 font-medium">Fetching registered users and decrypted metadata...</p>
+      </div>
+
+      <!-- Content Views (Table / Cards) -->
+      <div id="tableViewContainer" class="hidden glass-panel rounded-2xl overflow-hidden shadow-2xl">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-800 bg-slate-950/70 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                <th class="py-3.5 px-4">User & Contact</th>
+                <th class="py-3.5 px-4">Mobile Number</th>
+                <th class="py-3.5 px-4">Yearly Revenue</th>
+                <th class="py-3.5 px-4">Enterprise Name</th>
+                <th class="py-3.5 px-4">Password (Hidden / Encrypted)</th>
+                <th class="py-3.5 px-4">Registered Date</th>
+                <th class="py-3.5 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody" class="divide-y divide-slate-800/60 text-xs">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Cards Grid View -->
+      <div id="cardsViewContainer" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="hidden glass-panel rounded-2xl p-12 text-center space-y-3">
+        <i data-lucide="user-x" class="w-10 h-10 text-slate-600 mx-auto"></i>
+        <h4 class="text-base font-semibold text-slate-300">No matching user records found</h4>
+        <p class="text-xs text-slate-400 max-w-sm mx-auto">
+          Try clearing your search query or registering a new user via the button above.
+        </p>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 3. USER DETAIL INSPECTION MODAL            -->
+  <!-- ========================================== -->
+  <div id="detailModal" class="hidden modal-backdrop">
+    <div class="modal-content w-full max-w-3xl">
+      <!-- Modal Header -->
+      <div class="p-6 border-b border-slate-800 bg-[#0B0F19] flex items-start justify-between">
+        <div class="flex items-center gap-4">
+          <div id="modalAvatar" class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center font-bold text-white text-xl shadow-lg">
+            U
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 id="modalName" class="text-xl font-extrabold text-white">Full Name</h3>
+              <span id="modalRevenueBadge" class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border badge-tier-1m">
+                Revenue
+              </span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1 flex items-center gap-2">
+              <span id="modalEmail">user@email.com</span>
+              <span>•</span>
+              <span id="modalUid" class="font-mono text-slate-500">usr_12345</span>
+            </p>
+          </div>
+        </div>
+        <button id="closeDetailModalBtn" class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 overflow-y-auto space-y-6">
+        
+        <!-- Registration Intake Information -->
+        <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-5 space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+            <h4 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="clipboard-check" class="w-4 h-4 text-cyan-400"></i>
+              <span>Registration Intake Details</span>
+            </h4>
+            <span class="text-[10px] text-slate-400 font-mono">Captured at User Sign-up</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+              <span class="text-[10px] uppercase font-semibold text-slate-400 block mb-0.5">Full Name</span>
+              <span id="intakeName" class="text-white font-medium">-</span>
+            </div>
+
+            <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+              <span class="text-[10px] uppercase font-semibold text-slate-400 block mb-0.5">Registered Gmail/Work Email</span>
+              <span id="intakeEmail" class="text-white font-medium">-</span>
+            </div>
+
+            <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+              <span class="text-[10px] uppercase font-semibold text-slate-400 block mb-0.5">Mobile / Phone Number</span>
+              <span id="intakePhone" class="text-cyan-400 font-mono font-medium">-</span>
+            </div>
+
+            <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+              <span class="text-[10px] uppercase font-semibold text-slate-400 block mb-0.5">Reported Yearly Revenue</span>
+              <span id="intakeRevenue" class="text-emerald-400 font-bold">-</span>
+            </div>
+
+            <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+              <span class="text-[10px] uppercase font-semibold text-slate-400 block mb-0.5">Enterprise / Business Name</span>
+              <span id="intakeBusiness" class="text-white font-medium">-</span>
+            </div>
+
+            <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+              <span class="text-[10px] uppercase font-semibold text-slate-400 block mb-0.5">Registration Timestamp</span>
+              <span id="intakeCreatedAt" class="text-slate-300 font-mono text-[11px]">-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Password & Security Audit -->
+        <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-5 space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+            <h4 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="lock" class="w-4 h-4 text-cyan-400"></i>
+              <span>Password Security & Encryption Audit</span>
+            </h4>
+            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+              Zero-Cleartext Policy
+            </span>
+          </div>
+
+          <div class="p-4 bg-slate-900/80 rounded-xl border border-slate-800 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span class="text-[10px] uppercase font-semibold text-slate-400 block mb-1">Password Credential State</span>
+                <div class="flex items-center gap-2">
+                  <span id="modalPasswordDisplay" class="font-mono text-xs tracking-widest text-slate-300">••••••••••••</span>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <button
+                  id="toggleModalHashBtn"
+                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors"
+                >
+                  <i data-lucide="eye" class="w-3.5 h-3.5 text-cyan-400"></i>
+                  <span id="toggleModalHashText">Show Encrypted Hash</span>
+                </button>
+                <button
+                  id="copyModalHashBtn"
+                  class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                  title="Copy Encrypted Hash"
+                >
+                  <i data-lucide="copy" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] text-slate-400">
+              <div>
+                <span class="text-slate-500 block text-[10px]">Algorithm</span>
+                <span id="modalHashAlgo" class="text-slate-300 font-medium">AES-256 / SHA-256 Digest</span>
+              </div>
+              <div>
+                <span class="text-slate-500 block text-[10px]">Complexity Rating</span>
+                <span id="modalHashStrength" class="text-emerald-400 font-semibold">Enterprise</span>
+              </div>
+              <div>
+                <span class="text-slate-500 block text-[10px]">Password Length</span>
+                <span id="modalHashLength" class="text-slate-300 font-mono">12 chars</span>
+              </div>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400 italic">
+            Admins are provided with the secure salted cryptographic hash token representation to maintain enterprise zero-trust compliance.
+          </p>
+        </div>
+
+        <!-- Associated Enterprise Profile -->
+        <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-5 space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+            <h4 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="building" class="w-4 h-4 text-indigo-400"></i>
+              <span>Associated Enterprise Profile</span>
+            </h4>
+            <span id="modalCompletion" class="text-[11px] text-cyan-400 font-semibold">88% Completed</span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+              <span class="text-[10px] uppercase font-semibold text-slate-400 block mb-0.5">Industry</span>
+              <span id="modalIndustry" class="text-white font-medium">-</span>
+            </div>
+            <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+              <span class="text-[10px] uppercase font-semibold text-slate-400 block mb-0.5">Country</span>
+              <span id="modalCountry" class="text-white font-medium">-</span>
+            </div>
+            <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+              <span class="text-[10px] uppercase font-semibold text-slate-400 block mb-0.5">Business Model</span>
+              <span id="modalModel" class="text-white uppercase font-mono text-[11px]">-</span>
+            </div>
+            <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+              <span class="text-[10px] uppercase font-semibold text-slate-400 block mb-0.5">Analyses Generated</span>
+              <span id="modalAnalyses" class="text-cyan-400 font-bold">-</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 border-t border-slate-800 bg-[#0B0F19] flex items-center justify-between">
+        <button
+          id="modalDeleteUserBtn"
+          class="px-3.5 py-1.5 rounded-xl border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-xs font-semibold transition-colors"
+        >
+          Delete Account
+        </button>
+
+        <button
+          id="modalCloseBottomBtn"
+          class="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-md shadow-cyan-500/20 transition-all"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 4. REGISTER NEW USER MODAL                 -->
+  <!-- ========================================== -->
+  <div id="addUserModal" class="hidden modal-backdrop">
+    <div class="modal-content w-full max-w-lg">
+      <div class="p-6 border-b border-slate-800 bg-[#0B0F19] flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+            <i data-lucide="user-plus" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Register New Enterprise User</h3>
+            <p class="text-[11px] text-slate-400">Directly adds user to system and generates business record</p>
+          </div>
+        </div>
+        <button id="closeAddUserModalBtn" class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="addUserForm" class="p-6 overflow-y-auto space-y-4 text-xs">
+        <div id="addUserError" class="hidden p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-400 text-xs">
+          Error creating user.
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Full Name</label>
+            <input type="text" id="newDisplayName" required placeholder="e.g. Jordan Hayes" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500" />
+          </div>
+
+          <div>
+            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Gmail / Corporate Email *</label>
+            <input type="email" id="newEmail" required placeholder="jordan@acmecorp.com" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500" />
+          </div>
+
+          <div>
+            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Mobile Phone Number *</label>
+            <input type="text" id="newMobile" required placeholder="+1 (555) 019-2834" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500" />
+          </div>
+
+          <div>
+            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Yearly Revenue *</label>
+            <select id="newRevenue" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-500">
+              <option value="Under $100,000">Under $100,000</option>
+              <option value="$100,000 - $500,000">$100,000 - $500,000</option>
+              <option value="$500,000 - $1,000,000" selected>$500,000 - $1,000,000</option>
+              <option value="$1,000,000 - $5,000,000">$1,000,000 - $5,000,000</option>
+              <option value="$5,000,000+">$5,000,000+</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Password * (Min 6 chars)</label>
+            <input type="password" id="newPassword" required placeholder="••••••••" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500" />
+          </div>
+
+          <div>
+            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Enterprise Name</label>
+            <input type="text" id="newBusinessName" placeholder="Acme Global Inc" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500" />
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-800 flex items-center justify-end gap-2">
+          <button type="button" id="cancelAddUserBtn" class="px-4 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors font-semibold">
+            Cancel
+          </button>
+          <button type="submit" id="submitAddUserBtn" class="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold shadow-md shadow-cyan-500/20 transition-all">
+            Save User
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 5. BACKEND CONNECTION SETTINGS MODAL       -->
+  <!-- ========================================== -->
+  <div id="backendModal" class="hidden modal-backdrop">
+    <div class="modal-content w-full max-w-md">
+      <div class="p-5 border-b border-slate-800 bg-[#0B0F19] flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+            <i data-lucide="server" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Backend Server Settings</h3>
+            <p class="text-[11px] text-slate-400">Configure Render API endpoint for this portal</p>
+          </div>
+        </div>
+        <button id="closeBackendModalBtn" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form id="backendModalForm" class="p-5 space-y-4 text-xs">
+        <div>
+          <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+            Active Backend URL (Render / Localhost)
+          </label>
+          <input
+            type="text"
+            id="modalBackendUrlInput"
+            required
+            placeholder="https://your-service.onrender.com"
+            class="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 font-mono text-xs focus:outline-none focus:border-cyan-500"
+          />
+          <p class="text-[10px] text-slate-500 mt-1.5">
+            Saved in your browser storage. Connects this Vercel admin frontend directly to your Render backend API.
+          </p>
+        </div>
+
+        <div id="backendTestResult" class="hidden p-3 rounded-xl text-[11px] font-mono"></div>
+
+        <div class="flex items-center justify-between pt-2">
+          <button
+            type="button"
+            id="testConnectionBtn"
+            class="px-3 py-2 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-200 transition-colors flex items-center gap-1.5 text-xs font-medium"
+          >
+            <i data-lucide="activity" class="w-3.5 h-3.5 text-cyan-400"></i>
+            <span>Test Ping</span>
+          </button>
+
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              id="cancelBackendModalBtn"
+              class="px-3 py-2 rounded-xl border border-slate-800 text-slate-400 hover:text-white text-xs font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs shadow-md shadow-cyan-500/20"
+            >
+              Save & Reconnect
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main JavaScript App -->
+  <script src="./app.js"></script>
+</body>
+</html>

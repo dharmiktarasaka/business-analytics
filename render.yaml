@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: stratiq-backend
+    env: node
+    rootDir: server
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash
+      - key: ADMIN_SECRET_KEY
+        value: stratiq@admin2026
+      - key: PASSWORD_ENCRYPTION_KEY
+        value: stratiq_enterprise_crypto_key_2026_aes256
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: ALLOW_DEV_AUTH_BYPASS
+        value: "false"

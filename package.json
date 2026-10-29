@@ -1,0 +1,26 @@
+{
+  "name": "ai-business-advisor-workspace",
+  "version": "1.0.0",
+  "description": "AI Business Intelligence & Strategy Advisor - Fullstack Workspace",
+  "private": true,
+  "scripts": {
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "admin": "node admin/server.js",
+    "build:server": "npm run build --prefix server",
+    "build:client": "npm run build --prefix client",
+    "build": "npm run build:server && npm run build:client",
+    "typecheck": "npm run typecheck --prefix server && npm run build --prefix client"
+  },
+  "keywords": [
+    "ai",
+    "business-intelligence",
+    "strategy-advisor",
+    "gemini",
+    "firebase",
+    "react",
+    "express"
+  ],
+  "author": "",
+  "license": "MIT"
+}

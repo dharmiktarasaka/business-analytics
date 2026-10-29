@@ -1,0 +1,19 @@
+{
+  "name": "stratiq-admin-portal",
+  "version": "1.0.0",
+  "description": "Standalone Secure Admin Portal for STRATIQ Enterprise Platform",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "admin-portal",
+    "security",
+    "user-registry",
+    "stratiq"
+  ],
+  "author": "STRATIQ Enterprise Systems",
+  "license": "MIT"
+}
